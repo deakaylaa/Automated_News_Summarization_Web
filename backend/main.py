@@ -11,12 +11,12 @@ app = FastAPI(title="Pressto API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Ganti dengan domain frontend kamu di production
+    allow_origins=["*"], 
     allow_methods=["POST"],
     allow_headers=["*"],
 )
 
-# Load model sekali saat server start (bukan tiap request!)
+# Load model sekali 
 print("Loading BART model...")
 MODEL_NAME = "facebook/bart-large-cnn"
 tokenizer = BartTokenizer.from_pretrained(MODEL_NAME)
@@ -88,7 +88,7 @@ def summarize_article(body: SummarizeRequest):
     summary_len = len(summary)
     compression = round((1 - summary_len / original_len) * 100)
 
-    # Estimasi waktu baca: rata-rata 200 kata/menit
+    # Estimasi waktu baca
     words_saved = len(article_text.split()) - len(summary.split())
     time_saved_sec = int((words_saved / 200) * 60)
 
