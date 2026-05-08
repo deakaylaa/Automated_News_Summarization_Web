@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Automated News Summarizer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent: #3a7d44;
+      --accent-hover: #2e6436;
+      --bg: #f5f3ee;
+      --surface: rgba(0, 0, 0, 0.03);
+      --border: rgba(0, 0, 0, 0.1);
+      --text: #1a1a18;
+      --text-muted: rgba(26, 26, 24, 0.55);
+      --text-dim: rgba(26, 26, 24, 0.35);
+      --font-display: 'Playfair Display', Georgia, serif;
+      --font-sans: 'DM Sans', system-ui, sans-serif;
+      --radius: 12px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* HEADER */
+    header {
+      border-bottom: 0.5px solid var(--border);
+      padding: 18px clamp(24px, 5vw, 64px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: rgba(245, 243, 238, 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 7px;
+      display: grid;
+      place-items: center;
+    }
+
+    .logo-icon svg {
+      width: 17px;
+      height: 17px;
+      stroke: #f5f3ee;
+    }
+
+    .logo-text {
+      font-family: var(--font-display);
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+
+    .header-badge {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      background: var(--accent);
+      color: #f5f3ee;
+    }
+
+    /* MAIN */
+    main {
+      flex: 1;
+      padding: clamp(48px, 8vw, 80px) clamp(24px, 5vw, 64px) 64px;
+      max-width: 820px;
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 6vw, 56px);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -1.5px;
+      color: var(--text);
+      margin-bottom: 18px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      font-weight: 300;
+      color: var(--text-muted);
+      line-height: 1.7;
+      max-width: 480px;
+      margin-bottom: 52px;
+    }
+
+    /* INPUT */
+    .input-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+
+    .input-row {
+      display: flex;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--surface);
+      transition: border-color 0.2s;
+      margin-bottom: 12px;
+    }
+
+    .input-row:focus-within {
+      border-color: var(--accent);
+    }
+
+    #urlInput {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 15px 20px;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--text);
+      min-width: 0;
+    }
+
+    #urlInput::placeholder { color: var(--text-dim); }
+
+    #summarizeBtn {
+      padding: 0 26px;
+      background: var(--accent);
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 500;
+      color: #f5f3ee;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      transition: background 0.15s, opacity 0.15s;
+      flex-shrink: 0;
+    }
+
+    #summarizeBtn:hover { background: var(--accent-hover); }
+    #summarizeBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #summarizeBtn svg {
+      width: 15px;
+      height: 15px;
+      stroke: #f5f3ee;
+      fill: none;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+    }
+
+    .error-msg {
+      display: none;
+      font-size: 13px;
+      color: #ff6b6b;
+      padding: 4px 0;
+    }
+
+    /* DIVIDER */
+    .divider {
+      height: 0.5px;
+      background: var(--border);
+      margin: 44px 0;
+    }
+
+    /* LOADING */
+    #loadingState {
+      display: none;
+      align-items: center;
+      gap: 14px;
+      padding: 8px 0 32px;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid rgba(58, 125, 68, 0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #loadingMsg {
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text-muted);
+    }
+
+    /* RESULTS */
+    #resultArea {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 26px;
+      background: var(--surface);
+    }
+
+    .card-tag {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 14px;
+    }
+
+    .summary-text {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 400;
+      color: var(--text);
+      line-height: 1.75;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .stat-number {
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      font-weight: 300;
+      color: var(--text-muted);
+    }
+
+    .preview-text {
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text-muted);
+      line-height: 1.8;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 0.5px solid rgba(0, 0, 0, 0.07);
+      padding: 20px clamp(24px, 5vw, 64px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .footer-text {
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--text-dim);
+    }
+
+    .model-pill {
+      font-size: 11px;
+      font-weight: 400;
+      color: rgba(26, 26, 24, 0.4);
+      border: 0.5px solid rgba(0, 0, 0, 0.15);
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a class="logo" href="#">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h7"/></svg>
+      </div>
+      <span class="logo-text">Text Mining Project</span>
+    </a>
+  </header>
+
+  <main>
+    <div class="eyebrow">Automated Summarize News Tool</div>
+    <h1>Read less.<br>Know more.</h1>
+    <p class="subtitle">Paste any news article URL and get a precise AI-generated summary in seconds — used Facebook's BART model.</p>
+
+    <div class="input-label">Article URL</div>
+    <div class="input-row">
+      <input
+        id="urlInput"
+        type="url"
+        placeholder="https://www.bbc.com/news/article..."
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button id="summarizeBtn" onclick="handleSummarize()">
+        Summarize
+        <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+    <div class="error-msg" id="errorMsg"></div>
+
+    <div class="divider"></div>
+
+    <div id="loadingState">
+      <div class="spinner"></div>
+      <span id="loadingMsg">Fetching article content...</span>
+    </div>
+
+    <div id="resultArea">
+      <div class="card">
+        <div class="card-tag">Summary</div>
+        <p class="summary-text" id="summaryText"></p>
+      </div>
+
+      <div class="stats-row">
+        <div class="card">
+          <div class="card-tag">Reading time saved</div>
+          <div class="stat-number" id="timeSaved">—</div>
+          <div class="stat-label">vs. original article</div>
+        </div>
+        <div class="card">
+          <div class="card-tag">Compression</div>
+          <div class="stat-number" id="compression">—</div>
+          <div class="stat-label">characters reduced</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-tag">Article preview</div>
+        <p class="preview-text" id="previewText"></p>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span class="footer-text">Built with FastAPI + BART</span>
+    <span class="model-pill">Dea Kayla</span>
+  </footer>
+
+  <script>
+    const API_URL = 'http://localhost:8000';
+
+    const LOADING_STEPS = [
+      'Fetching article content...',
+      'Cleaning & parsing HTML...',
+      'Running BART inference...',
+      'Formatting summary...',
+    ];
+
+    function fmtTime(seconds) {
+      if (seconds < 60) return `${seconds}s`;
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return s > 0 ? `${m}m ${s}s` : `${m}m`;
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('errorMsg');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    function clearError() {
+      const el = document.getElementById('errorMsg');
+      el.style.display = 'none';
+      el.textContent = '';
+    }
+
+    async function handleSummarize() {
+      const url = document.getElementById('urlInput').value.trim();
+      clearError();
+
+      if (!url) {
+        showError('Masukkan URL artikel terlebih dahulu.');
+        return;
+      }
+
+      if (!url.startsWith('http')) {
+        showError('URL harus diawali dengan http:// atau https://');
+        return;
+      }
+
+      const btn = document.getElementById('summarizeBtn');
+      btn.disabled = true;
+
+      document.getElementById('resultArea').style.display = 'none';
+      document.getElementById('loadingState').style.display = 'flex';
+
+      // Animasi loading steps
+      let step = 0;
+      const msgEl = document.getElementById('loadingMsg');
+      msgEl.textContent = LOADING_STEPS[0];
+      const stepInterval = setInterval(() => {
+        step++;
+        if (step < LOADING_STEPS.length) {
+          msgEl.textContent = LOADING_STEPS[step];
+        }
+      }, 1200);
+
+      try {
+        const res = await fetch(`${API_URL}/summarize`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+
+        clearInterval(stepInterval);
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Terjadi kesalahan di server.');
+        }
+
+        const data = await res.json();
+
+        document.getElementById('summaryText').textContent = data.summary;
+        document.getElementById('timeSaved').textContent = fmtTime(data.read_time_saved_sec);
+        document.getElementById('compression').textContent = `${data.compression_pct}%`;
+        document.getElementById('previewText').textContent = data.preview;
+
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('resultArea').style.display = 'flex';
+
+      } catch (err) {
+        clearInterval(stepInterval);
+        document.getElementById('loadingState').style.display = 'none';
+        showError(err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // Enter key support
+    document.getElementById('urlInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleSummarize();
+    });
+  </script>
+
+</body>
+</html>
